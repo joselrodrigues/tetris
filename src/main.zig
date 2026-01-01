@@ -1,51 +1,34 @@
 const std = @import("std");
-const tetris = @import("tetris");
-
 const rl = @import("raylib");
+const utils = @import("utils.zig");
+const pieces = @import("pieces.zig");
+const game = @import("game.zig");
 
 pub fn main() anyerror!void {
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    const screenWidth = 256;
-    const screenHeight = 241;
-    rl.initWindow(screenWidth, screenHeight, "raylib-zig - sprite sheet example");
-    defer rl.closeWindow(); // Close window and OpenGL context
+    rl.initWindow(utils.screenWidth, utils.screenHeight, "NES Tetris");
+    defer rl.closeWindow();
 
     const spriteSheet = try rl.loadTexture("src/sprites/start.png");
+    const blocks = try rl.loadTexture("src/sprites/blocks.png");
     defer rl.unloadTexture(spriteSheet);
+    defer rl.unloadTexture(blocks);
 
-    std.debug.print("Sprite sheet loaded: {}x{}\n", .{ spriteSheet.width, spriteSheet.height });
+    rl.setTargetFPS(60);
 
-    rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
+    var gameState = game.GameState.init(100, 50, .S, 1);
 
-    // Main game loop
-    while (!rl.windowShouldClose()) { // Detect window close button or ESC key
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
+    while (!rl.windowShouldClose()) {
+        const deltaTime = rl.getFrameTime();
 
-        // Draw
-        //----------------------------------------------------------------------------------
+        gameState.handleInput();
+        gameState.update(deltaTime);
+
         rl.beginDrawing();
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.black);
 
-        // Draw specific part of sprite sheet (left half)
-        const sourceRec = rl.Rectangle{
-            .x = 0,
-            .y = 0,
-            .width = @as(f32, @floatFromInt(spriteSheet.width)) / 2,
-            .height = @as(f32, @floatFromInt(spriteSheet.height)),
-        };
-
-        // std.debug.print("{} {}", .{ spriteSheet.width, spriteSheet.height });
-
-        const position = rl.Vector2{ .x = 0, .y = 0 };
-        rl.drawTextureRec(spriteSheet, sourceRec, position, rl.Color.white);
-
-        //----------------------------------------------------------------------------------
+        const block = pieces.getBlockRect(gameState.level, utils.getColorType(gameState.currentPiece));
+        pieces.drawShape(gameState.currentPiece, gameState.pieceX, gameState.pieceY, block, blocks);
     }
 }
